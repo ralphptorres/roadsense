@@ -1,0 +1,8 @@
+.venv/
+data/raw/
+data/clean/
+__pycache__/
+*.pyc
+.marimo.lock
+
+__marimo__/
