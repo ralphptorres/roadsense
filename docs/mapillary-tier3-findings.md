@@ -78,23 +78,33 @@ contradicts the segment's existing flag.
 Beyond the map-features check above (which reads pre-labeled objects directly,
 no image understanding needed), a small demonstration of the path B approach
 described in `p0-submission/methodology-plan.md` (running a vision-language
-model on raw street images) was run on 3 sample images (2 Thailand, 1
+model on raw street images) was run on 13 sample images (9 Thailand, 4
 Maharashtra, drawn from the top-ranked flagged segments) using Qwen2-VL-2B-Instruct
 on a rented GPU instance. The model was prompted to describe sidewalk
 presence, marked crossings, road width, median/barrier presence, visible
 speed-limit signage, and general road type, exactly the kind of feature set
 the SAGAI workflow (cited in the findings summary) extracts at scale.
 
+Across the 13 images: only 1 showed a marked pedestrian crossing with visible
+sidewalks (a Maharashtra segment), the rest showed no sidewalks or crossings,
+and not one had readable speed-limit signage, consistent with the map-features
+check's own finding that sign-specific visibility is sparse in this imagery.
+The model's numeric estimates should not be trusted at face value: one
+response estimated a road's width as "165 meters," an implausible value for
+any road, a concrete illustration of why VLM outputs need independent
+verification before being used as scored inputs, not just a caveat.
+
 This is a proof of concept, not a scored input or a statistically meaningful
-sample: 3 images is not representative, and the model's outputs show the kind
-of minor inconsistency expected from a small general-purpose VLM (e.g.
-repeating a heading, or noting a "cow in the foreground" as one detail among
-several without independent confirmation). The value demonstrated is that this
-kind of feature extraction is technically viable directly from Mapillary
-imagery on modest hardware (a single rented A10 GPU), not that these 3
-descriptions are individually authoritative. Scaling this to the full flagged
-set, let alone all ~14,700 segments, is future work, the per-image inference
-cost is a few seconds on this hardware, so the binding constraint is the same
+sample: 13 images is still a small slice of the 365 flagged segments, and the
+model's outputs show the kind of inconsistency expected from a small
+general-purpose VLM (repeated headings, implausible numeric estimates, a "cow
+in the foreground" noted without independent confirmation). The value
+demonstrated is that this kind of feature extraction is technically viable
+directly from Mapillary imagery on modest hardware (a single rented A10 GPU),
+not that these descriptions are individually authoritative. Scaling this to
+the full flagged set, let alone all ~14,700 segments, is future work, the
+per-image inference cost is a few seconds on this hardware, so the binding
+constraint is the same
 one as the map-features check: Mapillary's own image-lookup API latency, not
 model inference time.
 
