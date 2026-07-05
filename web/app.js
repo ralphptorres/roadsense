@@ -12,6 +12,22 @@ const SSS_STOPS = [
 ];
 
 let PHYSICS_STOPS = null; // computed per-country once data loads, since range varies
+let TRAFFIC_STOPS = null;
+let FOOTTRAFFIC_STOPS = null;
+
+const JURISDICTION_STOPS = [
+  [0, "#f7f2e8"],
+  [2, "#f0d78c"],
+  [5, "#f0a202"],
+  [10, "#d1382f"],
+  [20, "#7a1810"],
+];
+
+// maplibre text-field rendering needs a glyphs (SDF font) server configured
+// on the style, which we don't have, and SDF text can't render color emoji
+// regardless, so category markers are colored circles, not pictograms.
+const POI_COLOR = { school: "#3f7fbf", hospital: "#d1382f", market: "#2f9e5c", other: "#8a8478" };
+const POI_LABEL = { school: "School", hospital: "Hospital", market: "Market/Shop", other: "Other" };
 
 // both basemaps are added at init and toggled via visibility, rather than
 // swapping the whole map style, since map.setStyle() wipes custom
@@ -94,11 +110,13 @@ function buildLegend(stops, title) {
 
 async function loadCountry(country) {
   if (dataCache[country]) return dataCache[country];
-  const [geojson, ranked] = await Promise.all([
+  const [geojson, ranked, jurisdictions, pois] = await Promise.all([
     fetch(`data/${country}.geojson`).then((r) => r.json()),
     fetch(`data/${country}_ranked.json`).then((r) => r.json()),
+    fetch(`data/${country}_jurisdictions.geojson`).then((r) => r.json()),
+    fetch(`data/${country}_pois.geojson`).then((r) => r.json()),
   ]);
-  dataCache[country] = { geojson, ranked };
+  dataCache[country] = { geojson, ranked, jurisdictions, pois };
   return dataCache[country];
 }
 
@@ -118,11 +136,38 @@ function computePhysicsStops(geojson) {
   };
 }
 
+// non-negative, unbounded-range properties (traffic volume, population
+// density), no natural zero-crossing like the physics residual, so a
+// plain low-to-high percentile ramp instead of a diverging one.
+function computeSequentialStops(geojson, prop, unit) {
+  const vals = geojson.features.map((f) => f.properties[prop]).filter((v) => v != null).sort((a, b) => a - b);
+  const q = (p) => vals[Math.floor(p * (vals.length - 1))];
+  return {
+    prop,
+    unit,
+    stops: [
+      [Math.round(q(0.05)), "#2166ac"],
+      [Math.round(q(0.35)), "#67a9cf"],
+      [Math.round(q(0.55)), "#f7f2e8"],
+      [Math.round(q(0.8)), "#f0a202"],
+      [Math.round(q(0.98)), "#d1382f"],
+    ],
+  };
+}
+
+const LAYER_META = {
+  sss: { stops: () => ({ prop: "SSS", unit: "", stops: SSS_STOPS }), title: "Speed Safety Score" },
+  physics: { stops: () => PHYSICS_STOPS, title: "Stopping-Distance Excess" },
+  traffic: { stops: () => TRAFFIC_STOPS, title: "Traffic Volume (weighted sample)" },
+  foottraffic: { stops: () => FOOTTRAFFIC_STOPS, title: "Foot Traffic (population density proxy)" },
+};
+
 function applyLayerStyle() {
   if (!map.getLayer("segments")) return;
-  const stops = currentLayer === "sss" ? { prop: "SSS", unit: "", stops: SSS_STOPS } : PHYSICS_STOPS;
+  const meta = LAYER_META[currentLayer];
+  const stops = meta.stops();
   map.setPaintProperty("segments", "line-color", colorExpr(stops));
-  buildLegend(stops, currentLayer === "sss" ? "Speed Safety Score" : "Stopping-Distance Excess");
+  buildLegend(stops, meta.title);
 }
 
 function rankedItemBody(r) {
@@ -168,13 +213,52 @@ function renderRankedList(ranked) {
 }
 
 async function renderCountry(country) {
-  const { geojson, ranked } = await loadCountry(country);
+  const { geojson, ranked, jurisdictions, pois } = await loadCountry(country);
   PHYSICS_STOPS = computePhysicsStops(geojson);
+  TRAFFIC_STOPS = computeSequentialStops(geojson, "WeightedSample", "");
+  FOOTTRAFFIC_STOPS = computeSequentialStops(geojson, "pop_density", "/km²");
 
   const total = geojson.features.length;
   const flagged = geojson.features.filter((f) => f.properties.is_significant).length;
   document.getElementById("stat-total").textContent = total.toLocaleString();
   document.getElementById("stat-flagged").textContent = flagged.toLocaleString();
+
+  if (map.getSource("jurisdictions")) {
+    map.getSource("jurisdictions").setData(jurisdictions);
+  } else {
+    map.addSource("jurisdictions", { type: "geojson", data: jurisdictions });
+    map.addLayer({
+      id: "jurisdictions-fill",
+      type: "fill",
+      source: "jurisdictions",
+      layout: { visibility: "none" },
+      paint: {
+        "fill-color": colorExpr({ prop: "flagged_pct", stops: JURISDICTION_STOPS }),
+        "fill-opacity": 0.45,
+      },
+    });
+    map.addLayer({
+      id: "jurisdictions-line",
+      type: "line",
+      source: "jurisdictions",
+      layout: { visibility: "none" },
+      paint: { "line-color": "#000", "line-opacity": 0.25, "line-width": 1 },
+    });
+    map.on("click", "jurisdictions-fill", (e) => {
+      const p = e.features[0].properties;
+      new maplibregl.Popup({ offset: 8 })
+        .setLngLat(e.lngLat)
+        .setHTML(`
+          <div class="popup-title">${p.jurisdiction}</div>
+          <div class="popup-row"><span class="k">Segments</span><span>${Math.round(p.total_segments).toLocaleString()}</span></div>
+          <div class="popup-row"><span class="k">Flagged speed-unsafe</span><span>${Math.round(p.flagged_segments)} (${p.flagged_pct}%)</span></div>
+          <div class="popup-row"><span class="k">Mean SSS</span><span>${p.mean_sss}</span></div>
+        `)
+        .addTo(map);
+    });
+    map.on("mouseenter", "jurisdictions-fill", () => (map.getCanvas().style.cursor = "pointer"));
+    map.on("mouseleave", "jurisdictions-fill", () => (map.getCanvas().style.cursor = ""));
+  }
 
   if (map.getSource("segments")) {
     map.getSource("segments").setData(geojson);
@@ -216,6 +300,31 @@ async function renderCountry(country) {
     map.on("mouseleave", "segments", () => (map.getCanvas().style.cursor = ""));
   }
 
+  if (map.getSource("pois")) {
+    map.getSource("pois").setData(pois);
+  } else {
+    map.addSource("pois", { type: "geojson", data: pois });
+    map.addLayer({
+      id: "pois-icons",
+      type: "circle",
+      source: "pois",
+      layout: { visibility: "none" },
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 2.5, 12, 6],
+        "circle-color": ["match", ["get", "category"], "school", POI_COLOR.school, "hospital", POI_COLOR.hospital, "market", POI_COLOR.market, POI_COLOR.other],
+        "circle-stroke-width": 1,
+        "circle-stroke-color": "#fff",
+      },
+    });
+    map.on("click", "pois-icons", (e) => {
+      const p = e.features[0].properties;
+      new maplibregl.Popup({ offset: 8 })
+        .setLngLat(e.lngLat)
+        .setHTML(`<div class="popup-title">${POI_LABEL[p.category] || p.category}</div>${p.name ? `<div class="popup-row"><span>${p.name}</span></div>` : ""}`)
+        .addTo(map);
+    });
+  }
+
   applyLayerStyle();
   renderRankedList(ranked);
 }
@@ -238,6 +347,20 @@ function initControls() {
       btn.classList.add("is-active");
       currentLayer = btn.dataset.layer;
       applyLayerStyle();
+    });
+  });
+
+  document.querySelectorAll("#overlay-switch .ctl-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      btn.classList.toggle("is-active");
+      const layerIds = btn.dataset.overlay === "jurisdictions" ? ["jurisdictions-fill", "jurisdictions-line"] : ["pois-icons"];
+      const visible = btn.classList.contains("is-active");
+      layerIds.forEach((id) => {
+        if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
+      });
+      if (btn.dataset.overlay === "pois") {
+        document.getElementById("poi-legend").hidden = !visible;
+      }
     });
   });
 

@@ -31,6 +31,12 @@
     <div class="control-group" id="layer-switch">
       <button class="ctl-btn is-active" data-layer="sss">SPEED SAFETY SCORE</button>
       <button class="ctl-btn" data-layer="physics">STOPPING-DISTANCE EXCESS</button>
+      <button class="ctl-btn" data-layer="traffic">TRAFFIC VOLUME</button>
+      <button class="ctl-btn" data-layer="foottraffic">FOOT TRAFFIC</button>
+    </div>
+    <div class="control-group" id="overlay-switch">
+      <button class="ctl-btn" data-overlay="jurisdictions">JURISDICTIONS</button>
+      <button class="ctl-btn" data-overlay="pois">SCHOOLS/HOSPITALS/MARKETS</button>
     </div>
     <div class="control-group" id="audience-switch">
       <button class="ctl-btn is-active" data-audience="policy">POLICY BRIEFING</button>
@@ -59,6 +65,12 @@
     <p class="panel-sub">Ranked by Speed Safety Score, statistically significant misalignment only</p>
 
     <div class="legend" id="legend"></div>
+    <div class="legend" id="poi-legend" hidden>
+      <div class="legend-title">Nearby facilities</div>
+      <div class="poi-key"><span class="poi-dot" style="background:#3f7fbf"></span>School</div>
+      <div class="poi-key"><span class="poi-dot" style="background:#d1382f"></span>Hospital</div>
+      <div class="poi-key"><span class="poi-dot" style="background:#2f9e5c"></span>Market/Shop</div>
+    </div>
 
     <ol class="ranked-list" id="ranked-list"></ol>
   </aside>
