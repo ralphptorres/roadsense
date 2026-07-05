@@ -1,4 +1,4 @@
-#set document(title: "roadsense - Speed Safety Score: Findings Summary")
+#set document(title: "RoadSense: Findings Summary and Recommended Interventions")
 #set page(margin: 2.2cm, numbering: "1")
 #set text(font: "New Computer Modern", size: 10.5pt)
 #set heading(numbering: "1.")
@@ -6,8 +6,11 @@
 #set cite(style: "ieee")
 
 #align(center)[
-  #text(size: 18pt, weight: "bold")[roadsense - Speed Safety Score]
+  #text(size: 18pt, weight: "bold")[RoadSense]
 
+  #text(size: 11.5pt, style: "italic")[Not just where a speed limit is unsafe. Why, and what to do about it.]
+
+  #v(0.1cm)
   #text(size: 12pt)[Findings Summary and Recommended Interventions]
 
   #v(0.2cm)
