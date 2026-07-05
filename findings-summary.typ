@@ -147,8 +147,8 @@ misalignment on a low-pedestrian corridor.
 
 = Additional physics and statistical checks
 
-Beyond the four-layer score, we implemented two further checks, grounded in the team's
-physics background, that produced working results rather than remaining theoretical.
+Beyond the four-layer score, we implemented three further checks that produced working
+results rather than remaining theoretical.
 
 *Stopping-distance reinterpretation.* Layer 2's residual is re-expressed in physical units
 using the AASHTO stopping-sight-distance formula ($t_r = 2.5$ s perception-reaction time,
@@ -167,6 +167,19 @@ practical validation of the fit. The fit formally fails a Kolmogorov-Smirnov goo
 test in both countries, a known artifact of that test's sensitivity at our sample sizes
 rather than evidence the tail model is wrong, so we report the result but do not lean on it
 as a rigorously validated statistical guarantee.
+
+*Street-level validation via Mapillary map features.* For the statistically significant
+flagged segments (228 Thailand, 137 Maharashtra), we queried Mapillary's map features API
+for nearby regulatory speed-limit signage and pedestrian-crossing infrastructure, a real,
+independently-sourced check against the fields already used in scoring. Coverage was far
+sparser in Maharashtra (12.4% of flagged segments had any nearby imagery) than Thailand
+(39.5%), consistent with the same data-sparsity pattern already documented in the network
+centrality and validation checks. Readable speed-limit signage was rare even where imagery
+existed, a genuine negative result we report rather than omit. The one segment where a
+sign was found is notable: a Maharashtra segment posted at 60 km/h has an actual street
+sign reading 30 km/h nearby, alongside 5 pedestrian-crossing features, a single concrete,
+independently-sourced instance of the exact posted-limit misalignment this project is built
+to detect.
 
 = Recommended interventions
 
