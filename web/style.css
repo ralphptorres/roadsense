@@ -311,7 +311,9 @@ body { flex: 1; min-height: 0; }
 .ranked-item.is-selected {
   background: var(--bg-3);
   border-left-color: var(--hazard);
-  box-shadow: 0 0 0 1px var(--hazard);
+  border-color: var(--hazard);
+  box-shadow: 0 0 0 2px var(--hazard), 0 4px 14px -4px var(--shadow);
+  transform: translateX(2px);
 }
 
 .ranked-item-top {
@@ -379,24 +381,23 @@ body { flex: 1; min-height: 0; }
 .filter-chip {
   font-family: var(--font-mono);
   font-size: 9.5px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.3px;
-  padding: 4px 9px;
+  padding: 5px 10px;
   border-radius: 3px;
   border: 1px solid var(--line);
-  background: var(--bg-2);
+  background: transparent;
   color: var(--text-dim);
   cursor: pointer;
-  opacity: 0.45;
-  transition: opacity 0.15s, background 0.15s;
+  opacity: 0.4;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
 }
-.filter-chip.is-active {
-  opacity: 1;
-  background: var(--bg-3);
-  color: var(--text);
-  border-color: var(--hazard);
-}
-.filter-chip:hover { opacity: 0.8; }
+.filter-chip:hover { opacity: 0.75; }
+
+.filter-chip[data-class="Critical"].is-active { opacity: 1; background: var(--danger); color: var(--danger-on); border-color: var(--danger); }
+.filter-chip[data-class="High"].is-active { opacity: 1; background: var(--danger-glow); color: var(--danger); border-color: var(--danger); }
+.filter-chip[data-class="Moderate"].is-active { opacity: 1; background: var(--bg-3); color: var(--text); border-color: var(--hazard-dim); }
+.filter-chip[data-class="Low"].is-active { opacity: 1; background: var(--bg-3); color: var(--text); border-color: var(--line); }
 
 /* scrollbar */
 .panel::-webkit-scrollbar { width: 8px; }

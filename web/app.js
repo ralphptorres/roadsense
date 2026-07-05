@@ -50,6 +50,24 @@ const BASE_STYLE = {
 };
 
 let map;
+let currentPopup = null;
+let popupTimeout = null;
+
+// only one popup on screen at a time, previous click's popup piles up
+// otherwise, and ranked-card popups auto-dismiss since they're
+// informational glances, not something a user needs to manually close
+// every time they browse the list.
+function showPopup(lngLat, html, autoCloseMs = 0) {
+  if (currentPopup) currentPopup.remove();
+  if (popupTimeout) clearTimeout(popupTimeout);
+  currentPopup = new maplibregl.Popup({ offset: 8 }).setLngLat(lngLat).setHTML(html).addTo(map);
+  if (autoCloseMs) {
+    popupTimeout = setTimeout(() => {
+      if (currentPopup) currentPopup.remove();
+      currentPopup = null;
+    }, autoCloseMs);
+  }
+}
 let currentCountry = "thailand";
 let currentLayer = "sss";
 let currentAudience = "policy";
@@ -221,10 +239,7 @@ function renderRankedList(ranked) {
       const lon = parseFloat(item.dataset.lon);
       const lat = parseFloat(item.dataset.lat);
       map.flyTo({ center: [lon, lat], zoom: 13, duration: 1200 });
-      new maplibregl.Popup({ offset: 8 })
-        .setLngLat([lon, lat])
-        .setHTML(`<div class="popup-title">Priority Segment</div><div class="popup-row"><span class="k">Location</span><span>${lat.toFixed(3)}, ${lon.toFixed(3)}</span></div>`)
-        .addTo(map);
+      showPopup([lon, lat], `<div class="popup-title">Priority Segment</div><div class="popup-row"><span class="k">Location</span><span>${lat.toFixed(3)}, ${lon.toFixed(3)}</span></div>`, 6000);
     });
   });
 }
@@ -263,15 +278,12 @@ async function renderCountry(country) {
     });
     map.on("click", "jurisdictions-fill", (e) => {
       const p = e.features[0].properties;
-      new maplibregl.Popup({ offset: 8 })
-        .setLngLat(e.lngLat)
-        .setHTML(`
+      showPopup(e.lngLat, `
           <div class="popup-title">${p.jurisdiction}</div>
           <div class="popup-row"><span class="k">Segments</span><span>${Math.round(p.total_segments).toLocaleString()}</span></div>
           <div class="popup-row"><span class="k">Flagged speed-unsafe</span><span>${Math.round(p.flagged_segments)} (${p.flagged_pct}%)</span></div>
           <div class="popup-row"><span class="k">Mean SSS</span><span>${p.mean_sss}</span></div>
-        `)
-        .addTo(map);
+        `);
     });
     map.on("mouseenter", "jurisdictions-fill", () => (map.getCanvas().style.cursor = "pointer"));
     map.on("mouseleave", "jurisdictions-fill", () => (map.getCanvas().style.cursor = ""));
@@ -308,10 +320,7 @@ async function renderCountry(country) {
           <div class="popup-row"><span class="k">Actual speed</span><span>~${p.F85thPercentileSpeed} km/h</span></div>
           <p style="max-width: 220px; margin: 8px 0 0; font-family: var(--font-body); font-size: 11.5px; line-height: 1.5;">${policyNarrative({ ssgPctile: p.ssg_pctile, osrPctile: p.osr_pctile, ssgRatio: p.SSG_risk_ratio, osr: p.OSR })} ${vueBadge(p.vue_score)}</p>
         `;
-      new maplibregl.Popup({ offset: 8 })
-        .setLngLat(e.lngLat)
-        .setHTML(`<div class="popup-title">${p.RoadClass}, ${p.LandUse.toLowerCase()}</div>${body}${flagBadge}`)
-        .addTo(map);
+      showPopup(e.lngLat, `<div class="popup-title">${p.RoadClass}, ${p.LandUse.toLowerCase()}</div>${body}${flagBadge}`);
     });
     map.on("mouseenter", "segments", () => (map.getCanvas().style.cursor = "pointer"));
     map.on("mouseleave", "segments", () => (map.getCanvas().style.cursor = ""));
@@ -335,10 +344,7 @@ async function renderCountry(country) {
     });
     map.on("click", "pois-icons", (e) => {
       const p = e.features[0].properties;
-      new maplibregl.Popup({ offset: 8 })
-        .setLngLat(e.lngLat)
-        .setHTML(`<div class="popup-title">${POI_LABEL[p.category] || p.category}</div>${p.name ? `<div class="popup-row"><span>${p.name}</span></div>` : ""}`)
-        .addTo(map);
+      showPopup(e.lngLat, `<div class="popup-title">${POI_LABEL[p.category] || p.category}</div>${p.name ? `<div class="popup-row"><span>${p.name}</span></div>` : ""}`);
     });
   }
 
