@@ -26,6 +26,8 @@ FIELDS = [
     "outlier_pctile",
     "is_significant",
     "risk_class",
+    "WeightedSample",
+    "pop_density",
 ]
 
 
@@ -35,12 +37,20 @@ def export(name: str) -> None:
     gdf["geometry"] = gdf.geometry.simplify(SIMPLIFY_TOLERANCE_DEG, preserve_topology=False)
     gdf = gdf[FIELDS + ["geometry"]].copy()
 
-    for col in ["SpeedLimit", "F85thPercentileSpeed", "SSG_risk_ratio", "OSR", "ssd_excess_m", "SSS", "vue_score", "ssg_pctile", "osr_pctile", "outlier_pctile"]:
+    for col in ["SpeedLimit", "F85thPercentileSpeed", "SSG_risk_ratio", "OSR", "ssd_excess_m", "SSS", "vue_score", "ssg_pctile", "osr_pctile", "outlier_pctile", "WeightedSample", "pop_density"]:
         gdf[col] = gdf[col].round(1)
 
     WEB_DATA.mkdir(parents=True, exist_ok=True)
     out_path = WEB_DATA / f"{name}.geojson"
     gdf.to_file(out_path, driver="GeoJSON")
+
+    jurisdictions_path = CLEAN / f"{name}_jurisdictions.gpkg"
+    if jurisdictions_path.exists():
+        jgdf = gpd.read_file(jurisdictions_path)
+        jgdf[["mean_sss", "flagged_pct"]] = jgdf[["mean_sss", "flagged_pct"]].round(1)
+        jout_path = WEB_DATA / f"{name}_jurisdictions.geojson"
+        jgdf.to_file(jout_path, driver="GeoJSON")
+        print(f"  -> {jout_path} ({jout_path.stat().st_size/1e6:.2f} MB)")
 
     # also emit a ranked list for the side panel, precomputed so the
     # frontend doesn't need to sort/filter thousands of features.
