@@ -312,7 +312,7 @@ body { flex: 1; min-height: 0; }
   background: var(--bg-3);
   border-left-color: var(--hazard);
   border-color: var(--hazard);
-  box-shadow: 0 0 0 2px var(--hazard), 0 4px 14px -4px var(--shadow);
+  box-shadow: 0 0 0 1px var(--hazard);
   transform: translateX(2px);
 }
 

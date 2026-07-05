@@ -72,6 +72,7 @@ let currentCountry = "thailand";
 let currentLayer = "sss";
 let currentAudience = "policy";
 let activeClasses = new Set(["Critical", "High", "Moderate", "Low"]);
+let selectedKey = null; // "lon,lat" of the currently selected ranked card, survives re-renders (audience toggle, filter changes)
 let currentTheme = localStorage.getItem("roadsense-theme") || "light";
 let dataCache = {};
 
@@ -233,9 +234,12 @@ function renderRankedList(ranked) {
     .join("");
 
   el.querySelectorAll(".ranked-item").forEach((item) => {
+    const key = `${item.dataset.lon},${item.dataset.lat}`;
+    if (key === selectedKey) item.classList.add("is-selected");
     item.addEventListener("click", () => {
       el.querySelectorAll(".ranked-item").forEach((i) => i.classList.remove("is-selected"));
       item.classList.add("is-selected");
+      selectedKey = key;
       const lon = parseFloat(item.dataset.lon);
       const lat = parseFloat(item.dataset.lat);
       map.flyTo({ center: [lon, lat], zoom: 13, duration: 1200 });
