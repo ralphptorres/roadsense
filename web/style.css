@@ -87,13 +87,15 @@ body { flex: 1; min-height: 0; }
 
 .hdr-brand {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
 }
 
 .hdr-mark {
   color: var(--hazard);
   font-size: 20px;
+  line-height: 1;
+  margin-top: 3px;
   animation: pulse 2.4s ease-in-out infinite;
 }
 
@@ -306,6 +308,11 @@ body { flex: 1; min-height: 0; }
   transition: background 0.15s, transform 0.1s;
 }
 .ranked-item:hover { background: var(--bg-3); transform: translateX(2px); }
+.ranked-item.is-selected {
+  background: var(--bg-3);
+  border-left-color: var(--hazard);
+  box-shadow: 0 0 0 1px var(--hazard);
+}
 
 .ranked-item-top {
   display: flex;
@@ -362,6 +369,34 @@ body { flex: 1; min-height: 0; }
 .tag-class-high { background: var(--danger-glow); color: var(--danger); border: 1px solid var(--danger); }
 .tag-class-moderate { background: var(--bg-3); color: var(--text-dim); border: 1px solid var(--line); }
 .tag-class-low { background: var(--bg-3); color: var(--text-dim); border: 1px solid var(--line); }
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -8px 0 18px;
+}
+.filter-chip {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 4px 9px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--text-dim);
+  cursor: pointer;
+  opacity: 0.45;
+  transition: opacity 0.15s, background 0.15s;
+}
+.filter-chip.is-active {
+  opacity: 1;
+  background: var(--bg-3);
+  color: var(--text);
+  border-color: var(--hazard);
+}
+.filter-chip:hover { opacity: 0.8; }
 
 /* scrollbar */
 .panel::-webkit-scrollbar { width: 8px; }

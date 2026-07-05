@@ -53,6 +53,7 @@ let map;
 let currentCountry = "thailand";
 let currentLayer = "sss";
 let currentAudience = "policy";
+let activeClasses = new Set(["Critical", "High", "Moderate", "Low"]);
 let currentTheme = localStorage.getItem("roadsense-theme") || "light";
 let dataCache = {};
 
@@ -96,6 +97,14 @@ function colorExpr(stops) {
   return expr;
 }
 
+function formatLegendNumber(n) {
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, "") + "B";
+  if (abs >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M";
+  if (abs >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, "") + "K";
+  return String(n);
+}
+
 function buildLegend(stops, title) {
   const el = document.getElementById("legend");
   const gradient = stops.stops.map(([, c]) => c).join(", ");
@@ -104,7 +113,7 @@ function buildLegend(stops, title) {
   el.innerHTML = `
     <div class="legend-title">${title}</div>
     <div class="legend-scale" style="background: linear-gradient(90deg, ${gradient})"></div>
-    <div class="legend-labels"><span>${lo}${stops.unit || ""}</span><span>${hi}${stops.unit || ""}</span></div>
+    <div class="legend-labels"><span>${formatLegendNumber(lo)}${stops.unit || ""}</span><span>${formatLegendNumber(hi)}${stops.unit || ""}</span></div>
   `;
 }
 
@@ -170,6 +179,11 @@ function applyLayerStyle() {
   buildLegend(stops, meta.title);
 }
 
+function applyClassFilter() {
+  if (!map.getLayer("segments")) return;
+  map.setFilter("segments", ["in", ["get", "risk_class"], ["literal", [...activeClasses]]]);
+}
+
 function rankedItemBody(r) {
   if (currentAudience === "technical") {
     const reasons = [];
@@ -185,7 +199,8 @@ function rankedItemBody(r) {
 
 function renderRankedList(ranked) {
   const el = document.getElementById("ranked-list");
-  el.innerHTML = ranked
+  const filtered = ranked.filter((r) => activeClasses.has(r.riskClass));
+  el.innerHTML = filtered
     .map((r, i) => {
       return `
       <li class="ranked-item" data-lon="${r.lon}" data-lat="${r.lat}">
@@ -201,6 +216,8 @@ function renderRankedList(ranked) {
 
   el.querySelectorAll(".ranked-item").forEach((item) => {
     item.addEventListener("click", () => {
+      el.querySelectorAll(".ranked-item").forEach((i) => i.classList.remove("is-selected"));
+      item.classList.add("is-selected");
       const lon = parseFloat(item.dataset.lon);
       const lat = parseFloat(item.dataset.lat);
       map.flyTo({ center: [lon, lat], zoom: 13, duration: 1200 });
@@ -326,6 +343,7 @@ async function renderCountry(country) {
   }
 
   applyLayerStyle();
+  applyClassFilter();
   renderRankedList(ranked);
 }
 
@@ -338,6 +356,22 @@ function initControls() {
       const c = COUNTRIES[currentCountry];
       map.flyTo({ center: c.center, zoom: c.zoom, duration: 1400 });
       renderCountry(currentCountry);
+    });
+  });
+
+  document.querySelectorAll("#class-filter .filter-chip").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const cls = btn.dataset.class;
+      if (activeClasses.has(cls)) {
+        if (activeClasses.size === 1) return; // keep at least one class visible
+        activeClasses.delete(cls);
+        btn.classList.remove("is-active");
+      } else {
+        activeClasses.add(cls);
+        btn.classList.add("is-active");
+      }
+      applyClassFilter();
+      if (dataCache[currentCountry]) renderRankedList(dataCache[currentCountry].ranked);
     });
   });
 
