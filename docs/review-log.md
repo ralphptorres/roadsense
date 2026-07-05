@@ -1,161 +1,154 @@
 # independent review log
 
 Checkpoints where an independent agent (not primed with the builder's own
-framing) stress-tests findings/design before the next step is built on top
-of them. Entries added as each gate reports back.
+framing) stress-tests findings/design before the next step is built on top of
+them. Entries added as each gate reports back.
 
 ## gate A: EDA + cleaning plan review
 
 Status: complete.
 
-Scope: verify the 8 claims in `eda-findings.md`, check for missed data
-issues, assess the SampleSizeTotal reliability-filtering plan, assess
-whether the Safe System threshold table's RoadClass x LandUse granularity
-is adequate.
+Scope: verify the 8 claims in `eda-findings.md`, check for missed data issues,
+assess the SampleSizeTotal reliability-filtering plan, assess whether the Safe
+System threshold table's RoadClass x LandUse granularity is adequate.
 
 Findings:
 
-- All 8 claims in `eda-findings.md` independently re-verified against raw
-  data. All confirmed, no correction needed.
-- **Maharashtra's `ExcludeFromSpeedSPI` flag is a perfect (100%) proxy for
-  null `SpeedLimit`** within Valid rows. Use it directly as the
-  vendor-provided reliability flag for Maharashtra rather than re-deriving
-  it from `SpeedLimit` nullness.
+- All 8 claims in `eda-findings.md` independently re-verified against raw data.
+  All confirmed, no correction needed.
+- **Maharashtra's `ExcludeFromSpeedSPI` flag is a perfect (100%) proxy for null
+  `SpeedLimit`** within Valid rows. Use it directly as the vendor-provided
+  reliability flag for Maharashtra rather than re-deriving it from `SpeedLimit`
+  nullness.
 - **Thailand's `ForAnalysis` column is a byte-for-byte duplicate of
   `SpeedLimit`** (100% match). Redundant, not new signal, ignore it.
-- **`SpeedLimitFloor` is `SpeedLimit` rounded to a standard band** (95%
-  exact match TH, 89% MH). Not an independent field and not a Safe System
-  threshold, don't mistake it for one.
+- **`SpeedLimitFloor` is `SpeedLimit` rounded to a standard band** (95% exact
+  match TH, 89% MH). Not an independent field and not a Safe System threshold,
+  don't mistake it for one.
 - **SampleSizeTotal is confounded with RoadClass and segment-merge count**
-  (r=0.76 with `NO_OF_Result_Segments` in Thailand), and its scale differs
-  by 2-3 orders of magnitude across RoadClass and ~10x between countries at
-  the same RoadClass. A single pooled percentile/log threshold would
-  disproportionately penalize secondary/local roads and Maharashtra as a
-  whole.
-- **Critical correction to the physics addendum's confidence-weighting
-  idea (see below):** empirically, `|F85-SpeedLimit gap|` does *not*
-  correlate with `log(SampleSizeTotal)` as the 1/sqrt(N) counting-statistics
-  argument assumes (r=-0.04 in Thailand, r=+0.14, wrong sign, in
-  Maharashtra). Comparing bottom-decile vs top-decile SampleSizeTotal
-  groups in Maharashtra, the *high*-sample group has higher gap variance
-  (20.8) than the low-sample group (12.0), the opposite of what "low N =
-  noisy" predicts. Likely cause: N is already large enough in most
-  segments (thousands to millions) that sampling error on the percentile
-  is negligible, so the observed gap variance reflects genuine road-to-road
-  heterogeneity, not measurement noise, meaning 1/sqrt(N) confidence
-  weighting isn't validated as a general reliability signal on this data.
-  Recommendation adopted: use SampleSizeTotal as a coarse "still-usable"
+  (r=0.76 with `NO_OF_Result_Segments` in Thailand), and its scale differs by
+  2-3 orders of magnitude across RoadClass and ~10x between countries at the
+  same RoadClass. A single pooled percentile/log threshold would
+  disproportionately penalize secondary/local roads and Maharashtra as a whole.
+- **Critical correction to the physics addendum's confidence-weighting idea (see
+  below):** empirically, `|F85-SpeedLimit gap|` does *not* correlate with
+  `log(SampleSizeTotal)` as the 1/sqrt(N) counting-statistics argument assumes
+  (r=-0.04 in Thailand, r=+0.14, wrong sign, in Maharashtra). Comparing
+  bottom-decile vs top-decile SampleSizeTotal groups in Maharashtra, the
+  *high*-sample group has higher gap variance (20.8) than the low-sample group
+  (12.0), the opposite of what "low N = noisy" predicts. Likely cause: N is
+  already large enough in most segments (thousands to millions) that sampling
+  error on the percentile is negligible, so the observed gap variance reflects
+  genuine road-to-road heterogeneity, not measurement noise, meaning 1/sqrt(N)
+  confidence weighting isn't validated as a general reliability signal on this
+  data. Recommendation adopted: use SampleSizeTotal as a coarse "still-usable"
   gate (drop bottom 1-5% within RoadClass, not pooled), not as a continuous
   confidence weight feeding the composite score.
-- **Threshold table caveat**: within a single RoadClass x LandUse cell,
-  actual posted `SpeedLimit` already spans 6-10 distinct values (e.g.
-  Thailand motorway x RURAL spans 0-120 km/h), so the Safe System ceiling
-  must be treated as a physics/policy-derived constant, not back-fit to
-  match observed limits in that cell.
-- **Exposure/VUE data is inherently coarse**: neither dataset has lane
-  count, median/divided-road flag, or sidewalk presence, LandUse
-  (urban/rural) is the only exposure proxy available in either file. This
-  is a caveat for the findings summary, not something a finer table can
-  fix. Maharashtra's continuous `UrbanPC` could soften the cutoff there
-  specifically but has no Thailand equivalent.
+- **Threshold table caveat**: within a single RoadClass x LandUse cell, actual
+  posted `SpeedLimit` already spans 6-10 distinct values (e.g. Thailand motorway
+  x RURAL spans 0-120 km/h), so the Safe System ceiling must be treated as a
+  physics/policy-derived constant, not back-fit to match observed limits in that
+  cell.
+- **Exposure/VUE data is inherently coarse**: neither dataset has lane count,
+  median/divided-road flag, or sidewalk presence, LandUse (urban/rural) is the
+  only exposure proxy available in either file. This is a caveat for the
+  findings summary, not something a finer table can fix. Maharashtra's
+  continuous `UrbanPC` could soften the cutoff there specifically but has no
+  Thailand equivalent.
 
 ## gate B: Layer 1-4 + validation review
 
 Status: complete. Scope: check Layer 2 for feature leakage, check Layer 4
-weighting for circularity, check Maharashtra (sparse-data) degrades
-gracefully, check the validation checks themselves.
+weighting for circularity, check Maharashtra (sparse-data) degrades gracefully,
+check the validation checks themselves.
 
 Findings and fixes applied:
 
 - **Layer 2 leakage: sound** (no reconstructable `SpeedLimit` signal via
-  `length_km`/`WeightedSample`, r=0.06-0.13, too weak). **Real issue
-  found and fixed**: `F85th_predicted` was generated by predicting on the
-  full dataset with a model fit only on an 80% train split, so ~80% of
-  `OSR` values were in-sample (mildly memorized, ~8% lower residual than
-  true out-of-sample). Fixed with `cross_val_predict` (5-fold) so every
-  row's `OSR` is out-of-fold; the train/test split is now used only for
-  the reported R^2/MAE.
-- **Layer 4 circularity: real issue found and fixed.** `ssg_z` and
-  `outlier_z` are not independent, both are monotonic transforms of the
-  same underlying `SpeedLimit`; within a single RoadClass x LandUse cell
-  they correlate 0.83-0.92. Averaging all three components as if
-  independent secretly weighted "posted limit" ~2x vs "operating speed"
-  ~1x. Fixed: collapsed `ssg_z`/`outlier_z` into one `posted_limit_component`,
-  then combined with `osr_z` as a true 50/50 between posted-limit-derived
-  and operating-speed-derived signal.
-- **`is_significant` fix (from earlier self-review) verified correct**,
-  no `stats_group` had `std==0` this run. But found a related fragility:
-  the coarse RoadClass x LandUse fallback group can itself be tiny (e.g.
-  Maharashtra motorway x RURAL: 4 rows, nowhere finer to fall back to).
-  Fixed: added a `significance_reliable` flag (`stats_group` size >= 15,
-  matching `clustering.py`'s `MIN_GROUP_SIZE`), forcing `is_significant`
-  false wherever the peer group is too thin to trust its empirical std.
-- **Maharashtra does not degrade gracefully in Layer 2, real issue found
-  and fixed.** `RoadClass_motorway` feature importance is ~0 in both
-  countries: Thailand's 126 motorway rows still produce plausible
-  predictions, but Maharashtra's 26 motorway rows (4 in RURAL) don't,
-  `F85th_predicted` for those 4 rows was 48-49 km/h against observed
-  52-74 km/h, i.e. the model defaulting to a generic baseline, feeding an
-  inflated `OSR` straight into the score with no confidence discount (one
-  row scored SSS=93.3 on this artifact). Fixed: added an `osr_reliable`
-  flag (RoadClass national row count >= 30) in `operating_speed.py`;
-  Layer 4 now falls back to the posted-limit signal alone (skipping OSR)
-  for unreliable rows instead of trusting a near-baseline prediction.
-- **Validation check 2's caveat named the wrong mechanism, corrected.**
-  See `docs/validation.md` — reran with a uniform `n_conflict=2` and the
+  `length_km`/`WeightedSample`, r=0.06-0.13, too weak). **Real issue found and
+  fixed**: `F85th_predicted` was generated by predicting on the full dataset
+  with a model fit only on an 80% train split, so ~80% of `OSR` values were
+  in-sample (mildly memorized, ~8% lower residual than true out-of-sample).
+  Fixed with `cross_val_predict` (5-fold) so every row's `OSR` is out-of-fold;
+  the train/test split is now used only for the reported R^2/MAE.
+- **Layer 4 circularity: real issue found and fixed.** `ssg_z` and `outlier_z`
+  are not independent, both are monotonic transforms of the same underlying
+  `SpeedLimit`; within a single RoadClass x LandUse cell they correlate
+  0.83-0.92. Averaging all three components as if independent secretly weighted
+  "posted limit" ~2x vs "operating speed" ~1x. Fixed: collapsed
+  `ssg_z`/`outlier_z` into one `posted_limit_component`, then combined with
+  `osr_z` as a true 50/50 between posted-limit-derived and
+  operating-speed-derived signal.
+- **`is_significant` fix (from earlier self-review) verified correct**, no
+  `stats_group` had `std==0` this run. But found a related fragility: the coarse
+  RoadClass x LandUse fallback group can itself be tiny (e.g. Maharashtra
+  motorway x RURAL: 4 rows, nowhere finer to fall back to). Fixed: added a
+  `significance_reliable` flag (`stats_group` size >= 15, matching
+  `clustering.py`'s `MIN_GROUP_SIZE`), forcing `is_significant` false wherever
+  the peer group is too thin to trust its empirical std.
+- **Maharashtra does not degrade gracefully in Layer 2, real issue found and
+  fixed.** `RoadClass_motorway` feature importance is ~0 in both countries:
+  Thailand's 126 motorway rows still produce plausible predictions, but
+  Maharashtra's 26 motorway rows (4 in RURAL) don't, `F85th_predicted` for those
+  4 rows was 48-49 km/h against observed 52-74 km/h, i.e. the model defaulting
+  to a generic baseline, feeding an inflated `OSR` straight into the score with
+  no confidence discount (one row scored SSS=93.3 on this artifact). Fixed:
+  added an `osr_reliable` flag (RoadClass national row count >= 30) in
+  `operating_speed.py`; Layer 4 now falls back to the posted-limit signal alone
+  (skipping OSR) for unreliable rows instead of trusting a near-baseline
+  prediction.
+- **Validation check 2's caveat named the wrong mechanism, corrected.** See
+  `docs/validation.md`: reran with a uniform `n_conflict=2` and the
   secondary_URBAN concentration barely moved (in fact rose slightly in
-  Maharashtra), so the Power Model exponent isn't the driver. The real
-  cause is `secondary_URBAN`'s low `safe_limit_kmh=30` threshold making
-  `SpeedLimit/30` a large ratio regardless of exponent — corrected in the
-  docs to name this instead.
+  Maharashtra), so the Power Model exponent isn't the driver. The real cause is
+  `secondary_URBAN`'s low `safe_limit_kmh=30` threshold making `SpeedLimit/30` a
+  large ratio regardless of exponent, corrected in the docs to name this
+  instead.
 - **Other notes, not fixed (lower priority / inherent to data scarcity)**:
-  `LandUse` is reused across Layers 1, 2, 3, and the VUE component, so
-  VUE's landuse term isn't fresh information and correlates with `ssg_z`
-  (0.44-0.60); flag this plainly in the findings write-up rather than
-  presenting VUE as fully orthogonal to the risk components. The 4 VUE
-  z-score inputs also aren't independent (`vue_landuse_z` correlates
-  0.33-0.63 with the POI/pop signals), so "4 components" is really ~2
-  independent axes (urbanness + traffic volume) — still adds real
-  information at the composite level (risk_index vs vue_index overall
-  correlation ~0.07), just don't oversell the component count.
+  `LandUse` is reused across Layers 1, 2, 3, and the VUE component, so VUE's
+  landuse term isn't fresh information and correlates with `ssg_z` (0.44-0.60);
+  flag this plainly in the findings write-up rather than presenting VUE as fully
+  orthogonal to the risk components. The 4 VUE z-score inputs also aren't
+  independent (`vue_landuse_z` correlates 0.33-0.63 with the POI/pop signals),
+  so "4 components" is really ~2 independent axes (urbanness + traffic volume),
+  still adds real information at the composite level (risk_index vs vue_index
+  overall correlation ~0.07), just don't oversell the component count.
 
-### round 2 refinements (2026-07-05, after revisiting whether the gate
-B fixes themselves were robust or just naive)
+### round 2 refinements (2026-07-05)
 
+After revisiting whether the gate B fixes themselves were robust or just naive.
 Two of the round-1 fixes above were themselves flagged as fixed-threshold
 heuristics rather than principled/continuous measures. Both strengthened:
 
-- **`osr_reliable`** (binary: RoadClass national row count >= 30)
-  replaced with **`osr_uncertainty`**, the RandomForest's own per-row
-  ensemble variance (std across the 300 trees' individual predictions in
-  a manual 5-fold out-of-fold loop, since `cross_val_predict` doesn't
-  expose per-fold models). This is genuine model uncertainty, not a
-  proxy for it, and Layer 4 now uses it as a **continuous** confidence
-  weight (`osr_weight`, 0 to 0.5) on OSR's contribution to `risk_index`,
-  rather than a binary on/off. Verified it actually tracks the known
-  problem case: Maharashtra's thin `motorway` class has mean
-  `osr_uncertainty` 8.65 vs 5.30 elsewhere.
-- **The `ssg_z`/`outlier_z` redundancy** (round 1 fix: average them into
-  one `posted_limit_component`) was revisited — averaging two things
-  correlated 0.83-0.92 doesn't really resolve the redundancy, it just
-  hides it. Changed to: drop `outlier_z` from the score entirely
-  (`SSG_risk_ratio` already captures the same "posted limit vs benchmark"
-  idea, and the peer-outlier lens is a weaker version of nearly the same
-  signal), keep it computed and reported as a named diagnostic reason
-  ("also posted N std above peer average") but not double-counted into
-  `risk_index`.
+- **`osr_reliable`** (binary: RoadClass national row count >= 30) replaced with
+  **`osr_uncertainty`**, the RandomForest's own per-row ensemble variance (std
+  across the 300 trees' individual predictions in a manual 5-fold out-of-fold
+  loop, since `cross_val_predict` doesn't expose per-fold models). This is
+  genuine model uncertainty, not a proxy for it, and Layer 4 now uses it as a
+  **continuous** confidence weight (`osr_weight`, 0 to 0.5) on OSR's
+  contribution to `risk_index`, rather than a binary on/off. Verified it
+  actually tracks the known problem case: Maharashtra's thin `motorway` class
+  has mean `osr_uncertainty` 8.65 vs 5.30 elsewhere.
+- **The `ssg_z`/`outlier_z` redundancy** (round 1 fix: average them into one
+  `posted_limit_component`) was revisited: averaging two things correlated
+  0.83-0.92 doesn't really resolve the redundancy, it just hides it. Changed to:
+  drop `outlier_z` from the score entirely (`SSG_risk_ratio` already captures
+  the same "posted limit vs benchmark" idea, and the peer-outlier lens is a
+  weaker version of nearly the same signal), keep it computed and reported as a
+  named diagnostic reason ("also posted N std above peer average") but not
+  double-counted into `risk_index`.
 - **Also found and fixed, same session**: `clean.py`'s `SampleSizeTotal`
-  reliability gate (originally "drop bottom 2% per RoadClass", written
-  before gate A's own finding that sample size doesn't predict gap noise
-  on this data) was checked directly — it was dropping rows with tens of
-  thousands of samples in Thailand (p2 threshold per RoadClass:
-  7,615-52,109), nowhere near a genuine data-validity problem. Replaced
-  with a floor on true zero-observation rows only, which is nearly a
-  no-op here (matches the reasoning already used in the old
-  `ai-safer-roads` repo's `clean_data.py`) and restores ~225 Thailand rows
+  reliability gate (originally "drop bottom 2% per RoadClass", written before
+  gate A's own finding that sample size doesn't predict gap noise on this data)
+  was checked directly: it was dropping rows with tens of thousands of samples
+  in Thailand (p2 threshold per RoadClass: 7,615-52,109), nowhere near a genuine
+  data-validity problem. Replaced with a floor on true zero-observation rows
+  only, which is nearly a no-op here (matches the reasoning already used in the
+  old `ai-safer-roads` repo's `clean_data.py`) and restores ~225 Thailand rows
   that had no justified reason to be dropped.
 
-## gate C: findings summary + methodology text review
+## gate C: findings + methodology review
 
-Status: not started. Scope: every claim in the write-up checked against
-what the code/output actually shows; citations re-checked.
+Status: not started. Scope: every claim in the write-up checked against what the
+code/output actually shows; citations re-checked.
+
