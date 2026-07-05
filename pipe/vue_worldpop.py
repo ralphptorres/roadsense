@@ -17,6 +17,11 @@ WORLDPOP_URLS = {
 
 
 def download_raster(name: str) -> pathlib.Path:
+    # curl, not requests: WorldPop's server throttled python-requests
+    # downloads heavily in testing (~1-2 KB/s) while curl reached full
+    # bandwidth on the same connection, -C - resumes a partial download,
+    # though WorldPop's redirect returns 200 not 206 so resume support is
+    # best-effort, not guaranteed.
     url = WORLDPOP_URLS[name]
     dest = RAW / f"{name}_worldpop.tif"
     if dest.exists():
@@ -40,7 +45,7 @@ def enrich(name: str) -> gpd.GeoDataFrame:
     gdf = gpd.read_file(in_path)
 
     raster_path = download_raster(name)
-    centroids = gdf.geometry.centroid
+    centroids = gdf.geometry.centroid  # a single point sample per segment, a 1km-resolution raster can't resolve within-segment variation anyway
 
     with rasterio.open(raster_path) as src:
         coords = list(zip(centroids.x, centroids.y))

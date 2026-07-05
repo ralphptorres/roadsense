@@ -105,6 +105,12 @@ def enrich(name: str) -> gpd.GeoDataFrame:
         gdf["poi_nearest_km"] = np.nan
         return gdf
 
+    # BallTree with haversine metric, not a simple lon/lat Euclidean
+    # distance: at these latitudes a degree of longitude is a meaningfully
+    # different real-world distance than a degree of latitude, haversine
+    # accounts for that, a flat Euclidean check would systematically
+    # distort the 300m buffer depending on how far from the equator a
+    # segment sits.
     centroids = gdf.geometry.centroid
     seg_rad = np.radians(np.column_stack([centroids.y, centroids.x]))
     poi_rad = np.radians(np.column_stack([pois.geometry.y, pois.geometry.x]))
