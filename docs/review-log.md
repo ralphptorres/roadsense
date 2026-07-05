@@ -149,6 +149,67 @@ heuristics rather than principled/continuous measures. Both strengthened:
 
 ## gate C: findings + methodology review
 
-Status: not started. Scope: every claim in the write-up checked against what the
-code/output actually shows; citations re-checked.
+Status: complete (run 2026-07-05, after application submission but before the
+challenge deadline). Scope: every claim in `findings-summary.typ` checked
+against what the code/output actually shows, citations re-checked. Run by a
+fresh agent not primed with prior framing, per the same methodology as gates A
+and B.
+
+Findings:
+
+- **Every number traceable to a script checked out exactly**: segment counts,
+  flagged counts (228/2.0% TH, 137/3.8% MH), the full classification table,
+  median SSS, stopping-distance excess, Layer 2 held-out R² (0.39/0.43, reran
+  `operating_speed.py` live to confirm), EVT threshold/shape/KS/percentile
+  figures (reran `evt_tail.py` live), all 5 Mapillary tier-3 numbers including
+  the single sign-mismatch data point, and all 5 `refs.bib` citation keys
+  resolve cleanly with reasonable usage.
+- **Real issue found and fixed: the recommended-intervention breakdown had no
+  backing script.** The write-up's headline claim ("enforcement, not
+  signage, is the majority fix in both countries", 62% Thailand / 48%
+  Maharashtra) and the "high vulnerable-user exposure" row could not be
+  reproduced from any script in the repo or its git history. Several
+  plausible reconstructions of the described logic were tried and none
+  matched; Thailand's own claimed sub-counts (17+68+142=227) didn't even sum
+  to the stated 228 flagged total, an internal arithmetic error independent
+  of the reproducibility problem.
+- Fixed: wrote `pipe/intervention.py`, an auditable classifier comparing
+  posted `SpeedLimit` and observed `F85thPercentileSpeed` against the same
+  `safe_limit_kmh` threshold Layer 1 already uses (both over -> road
+  redesign, only actual over -> enforcement/calming, only posted over ->
+  lower the limit, neither over -> flagged for peer-relative reasons only).
+  Corrected numbers (sums verified to equal the flagged total in both
+  countries):
+
+  | | Thailand (n=228) | Maharashtra (n=137) |
+  |---|---|---|
+  | road redesign | 222 (97.4%) | 46 (33.6%) |
+  | enforcement/calming | 6 (2.6%) | 77 (56.2%) |
+  | lower limit only | 0 (0.0%) | 12 (8.8%) |
+  | peer-relative only | 0 (0.0%) | 2 (1.5%) |
+  | high VUE exposure (`exposure_tier=='high'`) | 133 (58.3%) | 74 (54.0%) |
+
+  **This changes the paper's headline finding.** Thailand's flagged segments
+  are overwhelmingly a road-redesign problem (posted limit *and* observed
+  speed both exceed the Safe System threshold), not an enforcement problem;
+  Maharashtra is the country where enforcement/calming is the plurality fix.
+  "Enforcement is the majority fix in both countries" was not true even
+  under the intended methodology, this is not a rounding difference.
+- Minor: "Maharashtra's 26-segment motorway class" (methodology text, and the
+  same figure in the gate-B log above) should read **27** (confirmed via
+  `RoadClass.value_counts()` and `operating_speed.py`'s own thin-class
+  report). Predates this write-up, carried forward uncorrected until now.
+- No other inconsistencies found between the findings summary and the five
+  detailed `docs/*-findings.md` files it summarizes; note the summary's
+  headline table uses *median* SSS while the internal-consistency validation
+  check (`validation.md`) reports *mean* SSS, both are correctly computed but
+  it's easy to misread them as conflicting, worth a clarifying phrase if the
+  document is ever revised again.
+
+The already-submitted PDF (`findings-summary.pdf` at repo root, and the ADB
+application form) reflect the *original*, now-known-incorrect intervention
+breakdown, since submission had already happened before this gate C review
+ran and cannot be un-submitted. `docs/findings-summary-v2.typ` /
+`findings-summary-v2.pdf` at repo root are the corrected version, for the
+public repo only.
 

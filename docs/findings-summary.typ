@@ -23,7 +23,20 @@
   #text(size: 9pt)[July 5, 2026]
 ]
 
-#v(0.3cm)
+#v(0.2cm)
+
+#align(center)[#box(width: 90%)[
+  #text(size: 8.5pt, style: "italic")[
+    Corrected version, prepared 2026-07-05 after application submission but before the
+    challenge deadline, once an independent review found the recommended-intervention
+    breakdown below could not be reproduced from the scoring pipeline. The originally
+    submitted document is unchanged at the repository root (`findings-summary.pdf`);
+    this corrected version is `findings-summary-v2.pdf`, repo-only, see
+    `docs/review-log.md` (gate C) for the full account.
+  ]
+]]
+
+#v(0.2cm)
 
 #align(center)[#box(width: 90%)[
   *Abstract.* Posted speed limits in Thailand and Maharashtra are frequently misaligned
@@ -33,8 +46,10 @@
   and a physics-based power-law risk model, that identifies not just where a posted limit
   is unsafe but why, so the recommended fix differs by segment. We flag 228 segments in
   Thailand (2.0%) and 137 in Maharashtra (3.8%) as statistically significant Speed-Unsafe
-  Segments. In both countries the dominant recommended intervention is enforcement or
-  traffic calming, not sign changes, an unintuitive finding with direct budget implications.
+  Segments. The recommended intervention differs sharply by country: Thailand's flagged
+  segments are overwhelmingly a road-redesign problem (posted limit and observed speed both
+  exceed the safe threshold), while Maharashtra's are majority enforcement/calming, an
+  unintuitive, country-specific finding with direct budget implications.
 ]]
 
 #v(0.2cm)
@@ -46,7 +61,8 @@ whether drivers currently obey them. The two are related but distinct: a segment
 low rate of speeding while still posting a limit that is unsafe by Safe System standards,
 and vice versa. This distinction motivates our entire methodology and is the source of the
 paper's central finding: a naive "misalignment" narrative implies limits are wrong and
-should be lowered, but our diagnostic shows this is the *minority* case in both countries.
+should be lowered, but our diagnostic shows this is a minority case in both countries,
+the dominant fix instead differs by country between road redesign and enforcement.
 
 = Methodology
 
@@ -73,7 +89,7 @@ available, we report this honestly rather than overstate precision. Every predic
 genuine out-of-fold cross-validation, and each prediction's reliability is weighted by the
 RandomForest's own ensemble variance (agreement across its 300 trees) rather than a coarse
 sample-size cutoff. This discount is what keeps a handful of data-thin road classes (e.g.
-Maharashtra's 26-segment motorway class) from distorting the score.
+Maharashtra's 27-segment motorway class) from distorting the score.
 
 *Layer 3, peer comparison.* Segments are grouped into peer cohorts (road class, land use,
 local population-density tier), and each segment's posted limit is compared against its
@@ -119,21 +135,29 @@ approach.
   [Flagged Speed-Unsafe (significant)], [228 (2.0%)], [137 (3.8%)],
   [Median SSS, flagged segments], [75.7 / 100], [92.3 / 100],
   [Mean stopping-distance excess, flagged], [+52.5 m], [+42.3 m],
-  [Recommended: lower the limit only], [17 (7%)], [26 (19%)],
-  [Recommended: road redesign], [68 (30%)], [45 (33%)],
-  [Recommended: enforcement / calming], [142 (62%)], [66 (48%)],
-  [Also high vulnerable-user exposure], [53 (23%)], [54 (39%)],
+  [Recommended: road redesign], [222 (97.4%)], [46 (33.6%)],
+  [Recommended: enforcement / calming], [6 (2.6%)], [77 (56.2%)],
+  [Recommended: lower the limit only], [0 (0.0%)], [12 (8.8%)],
+  [Flagged for peer-relative reasons only], [0 (0.0%)], [2 (1.5%)],
+  [Also high vulnerable-user exposure], [133 (58.3%)], [74 (54.0%)],
   [Classification: Critical], [35 (0.3%)], [115 (3.2%)],
   [Classification: High], [193 (1.7%)], [22 (0.6%)],
   [Classification: Moderate], [5,343 (48.0%)], [1,652 (46.2%)],
   [Classification: Low], [5,563 (50.0%)], [1,788 (50.0%)],
 )
 
-*Enforcement, not signage, is the majority fix in both countries.* This is the single most
-policy-relevant finding. Our diagnostic shows that in 48-62% of flagged cases, the posted
-limit is broadly acceptable but actual driving speed exceeds it, a behavior or road-design
-problem, not a signage problem. Conflating these would misdirect budget toward the wrong
-fix.
+*The right fix is country-specific, and conflating the two would misdirect budget.* We
+classify each flagged segment by comparing its posted limit and its observed 85th-percentile
+speed against the same Safe System threshold (`pipe/intervention.py`): both over threshold
+means road redesign, only the observed speed over means enforcement/calming, only the
+posted limit over means the sign itself is the sole problem. Thailand's flagged segments are
+overwhelmingly a *road-redesign* problem (97.4%): both the posted limit and actual driving
+speed exceed the Safe System threshold, a new sign alone will not fix unsafe geometry that
+invites the observed speed regardless of what's posted. Maharashtra's flagged segments are
+majority *enforcement/calming* (56.2%): the posted limit is broadly acceptable but actual
+driving speed exceeds it, a behavior problem, not a signage problem. In both countries,
+segments where the sign alone is misaligned and driving is already safe are the smallest
+category (0% Thailand, 8.8% Maharashtra).
 
 *Maharashtra's flagged segments are more concentrated and more severe* (median flagged SSS
 92.3 vs. 78.1, despite a smaller absolute count), consistent with sparser, lower-quality
@@ -143,10 +167,10 @@ is the scalability story the challenge asks for: the same methodology, unmodifie
 toward a smaller but higher-confidence flagged set in the data-sparse country, rather than
 failing or producing noise.
 
-*Vulnerable-user exposure compounds the risk* for roughly a quarter to two-fifths of flagged
-segments. These should be treated as more urgent than their SSS alone indicates, since a
-misaligned limit near a school or market carries different stakes than the same
-misalignment on a low-pedestrian corridor.
+*Vulnerable-user exposure compounds the risk* for over half of flagged segments in both
+countries (58.3% Thailand, 54.0% Maharashtra). These should be treated as more urgent than
+their SSS alone indicates, since a misaligned limit near a school or market carries
+different stakes than the same misalignment on a low-pedestrian corridor.
 
 = Additional physics and statistical checks
 
@@ -191,16 +215,16 @@ to detect.
 
 = Recommended interventions
 
-- *Enforcement / traffic-calming (majority category)*: speed cameras, physical traffic
-  calming (speed humps, chicanes, narrowed lanes), or targeted police enforcement on
-  segments where the limit itself looks reasonable but is routinely exceeded.
-- *Road redesign*: segments where both the posted limit and actual driving speed exceed the
-  Safe System threshold. A new sign will not fix this, the physical design (lane width,
-  sightlines, lack of median separation) is inviting unsafe speeds regardless of what's
-  posted.
-- *Lower the posted limit (sign-only)*: the smallest category in both countries, segments
-  where drivers are already driving close to a safe speed, so the posted limit is the only
-  thing out of alignment.
+- *Road redesign (Thailand's majority category, 97.4%)*: segments where both the posted
+  limit and actual driving speed exceed the Safe System threshold. A new sign will not fix
+  this, the physical design (lane width, sightlines, lack of median separation) is inviting
+  unsafe speeds regardless of what's posted.
+- *Enforcement / traffic-calming (Maharashtra's majority category, 56.2%)*: speed cameras,
+  physical traffic calming (speed humps, chicanes, narrowed lanes), or targeted police
+  enforcement on segments where the limit itself looks reasonable but is routinely exceeded.
+- *Lower the posted limit (sign-only)*: the smallest category in both countries (0% Thailand,
+  8.8% Maharashtra), segments where drivers are already driving close to a safe speed, so the
+  posted limit is the only thing out of alignment.
 - *Priority multiplier*: within any category, segments with high vulnerable-user exposure
   (schools, markets, dense population nearby) should be resequenced ahead of otherwise
   similarly-scored segments.
@@ -234,8 +258,8 @@ doctrine rather than local calibration. Applying this methodology to a new count
 only: (1) the same TomTom-style probe/speed-limit dataset structure, (2) a RoadClass ×
 LandUse Safe System threshold table, reusable as-is since it is policy-derived rather than
 data-fitted, and (3) an OpenStreetMap and WorldPop extract for the region, both free and
-global in coverage. The headline result, that enforcement rather than signage is the
-majority fix, is itself a replicable hypothesis other countries can test against their own
-data.
+global in coverage. The headline result, that the dominant fix is country-specific rather
+than universally enforcement or universally signage, is itself a replicable hypothesis
+other countries can test against their own data.
 
 #bibliography("refs.bib", title: "References", style: "ieee")

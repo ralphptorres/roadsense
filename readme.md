@@ -12,9 +12,11 @@ real problem is enforcement, or vice versa) wastes a limited road-safety budget.
 
 RoadSense separates *that* a segment is unsafe from *why*, and gets a different,
 often counterintuitive, answer: across 14,711 monitored segments in Thailand and
-Maharashtra, the majority fix for flagged segments is **enforcement or traffic
-calming, not new signage** (62% Thailand, 48% Maharashtra). Only a small
-fraction actually need the posted limit lowered. That distinction, not just the
+Maharashtra, the dominant fix is country-specific. Thailand's flagged segments
+are overwhelmingly a **road-redesign problem** (97.4%, posted limit and actual
+driving speed both exceed the safe threshold), while Maharashtra's are majority
+**enforcement or traffic calming** (56.2%). In both countries, only a small
+fraction need just the posted limit lowered. That distinction, not just the
 flagging, is the deliverable, because it's the difference between a dashboard
 and a decision.
 
@@ -35,7 +37,13 @@ not noisier, demonstrating the methodology actually scales rather than only
 working on one clean dataset.
 
 **Live visualization**: https://ralphptorres.github.io/roadsense/
+
 **Findings summary (PDF)**: [`findings-summary.pdf`](findings-summary.pdf)
+
+A gate C review after submission found the recommended-intervention breakdown
+wasn't reproducible from the pipeline, corrected in
+[`findings-summary-v2.pdf`](findings-summary-v2.pdf), repo-only, see
+[`docs/review-log.md`](docs/review-log.md).
 
 ## this repo covers all four challenge deliverables
 
@@ -81,7 +89,11 @@ network-centrality check (negative result, documented not used,
 [`docs/network-centrality-findings.md`](docs/network-centrality-findings.md)),
 and a Mapillary street-level validation check on the flagged segments
 ([`pipe/mapillary_tier3.py`](pipe/mapillary_tier3.py),
-[`docs/mapillary-tier3-findings.md`](docs/mapillary-tier3-findings.md)).
+[`docs/mapillary-tier3-findings.md`](docs/mapillary-tier3-findings.md)). Which
+of the three recommended interventions applies to each flagged segment
+(road redesign, enforcement/calming, or lower the limit) is itself computed,
+not hand-picked, by comparing posted limit and observed speed against the
+Safe System threshold ([`pipe/intervention.py`](pipe/intervention.py)).
 
 ## classification system
 
@@ -145,6 +157,7 @@ uv run python pipe/clustering.py both
 uv run python pipe/composite.py both
 uv run python pipe/kinematics.py both
 uv run python pipe/evt_tail.py both
+uv run python pipe/intervention.py both
 uv run python pipe/validate.py both
 uv run python pipe/jurisdictions.py both
 uv run python pipe/poi_markers.py both
