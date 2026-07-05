@@ -203,3 +203,9 @@ be served over http (`pipe/serve_web.py` above).
 - [`docs/mapillary-tier3-findings.md`](docs/mapillary-tier3-findings.md):
   street-level validation check
 
+## license
+
+Code is [MIT licensed](license). Data has mixed terms (original challenge
+data, OpenStreetMap, GADM, WorldPop, Mapillary), see
+[`data_license.md`](data_license.md) for what applies to what.
+
