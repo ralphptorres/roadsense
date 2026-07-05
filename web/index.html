@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>roadsense — Speed Safety Score</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="grain"></div>
+
+<header class="hdr">
+  <div class="hdr-brand">
+    <span class="hdr-mark">◆</span>
+    <div>
+      <h1>road<span class="hl">sense</span></h1>
+      <p class="hdr-sub">Speed Safety Score — ADB AI for Safer Roads</p>
+    </div>
+  </div>
+
+  <div class="hdr-controls">
+    <div class="control-group" id="country-switch">
+      <button class="ctl-btn is-active" data-country="thailand">THAILAND</button>
+      <button class="ctl-btn" data-country="maharashtra">MAHARASHTRA</button>
+    </div>
+    <div class="control-group" id="layer-switch">
+      <button class="ctl-btn is-active" data-layer="sss">SPEED SAFETY SCORE</button>
+      <button class="ctl-btn" data-layer="physics">STOPPING-DISTANCE EXCESS</button>
+    </div>
+    <div class="control-group" id="audience-switch">
+      <button class="ctl-btn is-active" data-audience="policy">POLICY BRIEFING</button>
+      <button class="ctl-btn" data-audience="technical">TECHNICAL</button>
+    </div>
+    <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark" aria-label="Toggle theme">◐</button>
+  </div>
+</header>
+
+<main class="layout">
+  <div id="map"></div>
+
+  <aside class="panel">
+    <div class="panel-stats">
+      <div class="stat">
+        <span class="stat-num" id="stat-total">—</span>
+        <span class="stat-label">segments analyzed</span>
+      </div>
+      <div class="stat stat-danger">
+        <span class="stat-num" id="stat-flagged">—</span>
+        <span class="stat-label">flagged speed-unsafe</span>
+      </div>
+    </div>
+
+    <h2 class="panel-title">Priority Segments</h2>
+    <p class="panel-sub">Ranked by Speed Safety Score, statistically significant misalignment only</p>
+
+    <div class="legend" id="legend"></div>
+
+    <ol class="ranked-list" id="ranked-list"></ol>
+  </aside>
+</main>
+
+<div class="popup-tpl" id="popup-tpl" hidden></div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
