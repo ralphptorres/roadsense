@@ -73,6 +73,31 @@ independently-sourced instance of exactly the kind of posted-limit
 misalignment this project is built to detect, and it corroborates rather than
 contradicts the segment's existing flag.
 
+## path B demonstration: VLM scene description
+
+Beyond the map-features check above (which reads pre-labeled objects directly,
+no image understanding needed), a small demonstration of the path B approach
+described in `p0-submission/methodology-plan.md` (running a vision-language
+model on raw street images) was run on 3 sample images (2 Thailand, 1
+Maharashtra, drawn from the top-ranked flagged segments) using Qwen2-VL-2B-Instruct
+on a rented GPU instance. The model was prompted to describe sidewalk
+presence, marked crossings, road width, median/barrier presence, visible
+speed-limit signage, and general road type, exactly the kind of feature set
+the SAGAI workflow (cited in the findings summary) extracts at scale.
+
+This is a proof of concept, not a scored input or a statistically meaningful
+sample: 3 images is not representative, and the model's outputs show the kind
+of minor inconsistency expected from a small general-purpose VLM (e.g.
+repeating a heading, or noting a "cow in the foreground" as one detail among
+several without independent confirmation). The value demonstrated is that this
+kind of feature extraction is technically viable directly from Mapillary
+imagery on modest hardware (a single rented A10 GPU), not that these 3
+descriptions are individually authoritative. Scaling this to the full flagged
+set, let alone all ~14,700 segments, is future work, the per-image inference
+cost is a few seconds on this hardware, so the binding constraint is the same
+one as the map-features check: Mapillary's own image-lookup API latency, not
+model inference time.
+
 ## why full-scale coverage was not attempted
 
 Mapillary's `map_features` API responded at 4-12 seconds per request during
