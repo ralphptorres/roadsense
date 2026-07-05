@@ -3,6 +3,8 @@
 ADB "AI for Safer Roads" challenge submission - Speed Safety Score for
 Thailand and Maharashtra road segments.
 
+Live visualization: https://ralphptorres.github.io/roadsense/
+
 ## setup
 
 ```
@@ -31,6 +33,13 @@ Scripts in `pipe/`, run in order, each `[thailand|maharashtra|both]`:
   result, see `docs/network-centrality-findings.md`, not used in scoring).
 - `evt_tail.py` - Extreme Value Theory tail-risk check (see `docs/evt-findings.md`).
 - `validate.py` - validation checks (see `docs/validation.md`).
+- `jurisdictions.py` - spatially joins flagged segments to administrative
+  boundaries (GADM, province level for Thailand, district level for
+  Maharashtra) and aggregates per-jurisdiction stats, for the
+  remediation-planning overlay.
+- `poi_markers.py` - separate fetch from `vue_osm.py` (keeps OSM tags,
+  which the VUE scoring fetch drops for a smaller payload), for the
+  school/hospital/market marker overlay.
 - `export_web.py` - exports the final per-segment data to `web/data/` for
   the frontend below. Rerun this after any pipeline change.
 
@@ -51,7 +60,13 @@ matplotlib/folium export, since this is meant to work for both a
 technical judging panel and a non-technical policy audience. Features:
 
 - light/dark theme toggle (light default)
-- Speed Safety Score and stopping-distance-excess (physics) map layers
+- four segment-coloring modes: Speed Safety Score, stopping-distance
+  excess (physics), traffic volume, and foot traffic (population
+  density proxy)
+- toggleable overlays: jurisdiction boundaries shaded by flagged-segment
+  rate (click for per-jurisdiction stats, for remediation planning: which
+  jurisdiction owns the fix for a cluster of segments), and
+  school/hospital/market facility markers
 - a policy/technical audience toggle: the side panel and popups switch
   between plain-language recommendations (mapped from the intervention
   table in `p0-submission/methodology-plan.md`) and percentile-based
@@ -62,6 +77,8 @@ technical judging panel and a non-technical policy audience. Features:
 Regenerate the data and serve it:
 
 ```
+uv run python pipe/jurisdictions.py both
+uv run python pipe/poi_markers.py both
 uv run python pipe/export_web.py both
 uv run python pipe/serve_web.py       # serves web/ at http://localhost:8000
 ```
