@@ -2,6 +2,8 @@
 
 ### Not just where a speed limit is unsafe. Why, and what to actually do about it.
 
+A submission to ADB's [AI for Safer Roads Innovation Challenge](https://challenges.adb.org/en/challenges/ai4saferroads).
+
 Most "is this speed limit safe" tools stop at detection: here are N unsafe
 segments. That answer doesn't tell a transport ministry what to actually do
 about any of them, and spending money on the wrong fix (a new sign where the
