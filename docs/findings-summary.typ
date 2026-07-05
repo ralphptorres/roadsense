@@ -182,6 +182,11 @@ existed, a genuine negative result we report rather than omit. The one segment w
 sign was found is notable: a Maharashtra segment posted at 60 km/h has an actual street
 sign reading 30 km/h nearby, alongside 5 pedestrian-crossing features, a single concrete,
 independently-sourced instance of the exact posted-limit misalignment this project is built
+to detect. As a small demonstration of the vision-language-model path also scoped for this
+layer, we ran Qwen2-VL-2B on 13 sample street images (a rented GPU, not required for the
+map-features check above): sidewalks and marked crossings were visible in only 1 of 13,
+readable speed-limit signage in none, consistent with the map-features result. This is a
+proof of concept on a small sample, not a scored input, full details in the repo's docs
 to detect.
 
 = Recommended interventions
