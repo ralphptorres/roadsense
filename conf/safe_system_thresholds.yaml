@@ -1,0 +1,100 @@
+# Safe System speed thresholds and power-law risk exponents.
+#
+# safe_limit_kmh: survivable-crash-speed ceiling, grounded in crash
+#   biomechanics (WHO Speed Management manual; see p0-submission/
+#   methodology-plan.md for the full survivability table this derives
+#   from).
+#
+# n_conflict: the Power Model exponent (Elvik et al. 2004 / Nilsson) for
+#   risk_ratio = (speed / safe_limit_kmh) ^ n_conflict. n=2 for injury-scale
+#   risk (vehicle-occupant crashes, no pedestrian exposure), n=4 for
+#   fatal-scale risk (pedestrian/cyclist conflict cells, where survivability
+#   drops off steeply with impact speed).
+#
+# Keys use lowercase RoadClass / uppercase LandUse (both datasets are
+# normalized to this casing during cleaning).
+
+thresholds:
+
+  motorway_URBAN:
+    road_class: motorway
+    land_use: URBAN
+    safe_limit_kmh: 100
+    n_conflict: 2
+    rationale: >
+      Fully access-controlled, grade-separated, with physical median
+      barrier. No pedestrian or cyclist exposure. Injury-scale exponent:
+      100 km/h is survivable for vehicle occupants in frontal crashes on
+      divided roads.
+
+  motorway_RURAL:
+    road_class: motorway
+    land_use: RURAL
+    safe_limit_kmh: 100
+    n_conflict: 2
+    rationale: >
+      Same access-control and separation as urban motorway. Head-on
+      crashes are physically prevented by median barrier; injury-scale
+      exponent applies.
+
+  trunk_URBAN:
+    road_class: trunk
+    land_use: URBAN
+    safe_limit_kmh: 50
+    n_conflict: 4
+    rationale: >
+      Major urban arterial with at-grade intersections and pedestrian
+      crossing points. Side-impact and pedestrian-conflict crashes are
+      likely; fatal-scale exponent applies since pedestrian survivability
+      drops off steeply with impact speed.
+
+  trunk_RURAL:
+    road_class: trunk
+    land_use: RURAL
+    safe_limit_kmh: 80
+    n_conflict: 2
+    rationale: >
+      High-standard rural arterial, typically wide lanes and good sight
+      distance, reducing (but not eliminating) head-on risk. No
+      pedestrian exposure assumed; injury-scale exponent applies.
+
+  primary_URBAN:
+    road_class: primary
+    land_use: URBAN
+    safe_limit_kmh: 50
+    n_conflict: 4
+    rationale: >
+      Urban primary road with mixed traffic, pedestrian activity and
+      at-grade intersections. Same pedestrian-conflict argument as
+      trunk_URBAN; fatal-scale exponent applies.
+
+  primary_RURAL:
+    road_class: primary
+    land_use: RURAL
+    safe_limit_kmh: 70
+    n_conflict: 2
+    rationale: >
+      Rural primary road without median separation. Head-on crashes are
+      the dominant fatal crash type for vehicle occupants, not pedestrian
+      conflicts; injury-scale exponent applies.
+
+  secondary_URBAN:
+    road_class: secondary
+    land_use: URBAN
+    safe_limit_kmh: 30
+    n_conflict: 4
+    rationale: >
+      Urban secondary roads typically serve residential / commercial
+      areas with high pedestrian and two-wheeler exposure. Fatal-scale
+      exponent: at 30 km/h pedestrian fatality risk at impact is roughly
+      10%, above 50 km/h it exceeds 80%.
+
+  secondary_RURAL:
+    road_class: secondary
+    land_use: RURAL
+    safe_limit_kmh: 60
+    n_conflict: 2
+    rationale: >
+      Rural secondary roads are narrower and geometrically poorer than
+      primary roads, increasing head-on and run-off-road risk for
+      vehicle occupants. Injury-scale exponent applies.
